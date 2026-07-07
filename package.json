@@ -1,0 +1,14 @@
+{
+  "name": "project-analyst-co-website",
+  "version": "1.0.0",
+  "description": "The Project Analyst Co. — website + backend (accounts, sessions, SadaPay payment claims)",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {}
+}
