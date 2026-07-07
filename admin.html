@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin — Payment Claims — The Project Analyst Co.</title>
+<style>
+  :root{ --ink:#050609; --cream:#F5D0C5; --tan:#D69F7E; --umber:#774936; --maroon:#3C0000; --line:rgba(245,208,197,0.14); }
+  *{box-sizing:border-box;}
+  body{ margin:0; background:var(--ink); color:var(--cream); font-family:'IBM Plex Mono',monospace, monospace; padding:40px 20px; }
+  .wrap{ max-width:880px; margin:0 auto; }
+  h1{ font-size:1.3rem; margin-bottom:4px; }
+  p.sub{ opacity:.6; font-size:.85rem; margin-top:0; }
+  .key-row{ display:flex; gap:10px; margin:24px 0; }
+  input{ flex:1; padding:10px 12px; background:#0e1015; border:1px solid var(--line); color:var(--cream); border-radius:4px; font-family:inherit; }
+  button{ padding:10px 18px; background:var(--maroon); color:var(--cream); border:1px solid var(--tan); border-radius:4px; cursor:pointer; font-family:inherit; }
+  button:hover{ background:#560000; }
+  table{ width:100%; border-collapse:collapse; margin-top:20px; font-size:.85rem; }
+  th,td{ text-align:left; padding:10px 8px; border-bottom:1px solid var(--line); }
+  th{ opacity:.6; font-weight:400; text-transform:uppercase; font-size:.72rem; letter-spacing:.06em; }
+  .status{ padding:3px 8px; border-radius:10px; font-size:.72rem; }
+  .status.pending{ background:rgba(214,159,126,0.15); color:var(--tan); }
+  .status.verified{ background:rgba(60,150,90,0.15); color:#7fd99a; }
+  .verify-btn{ padding:6px 12px; font-size:.75rem; }
+  .verify-btn:disabled{ opacity:.4; cursor:default; }
+  #msg{ margin-top:16px; font-size:.82rem; opacity:.75; }
+  .empty{ opacity:.5; padding:30px 0; text-align:center; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Payment Claims</h1>
+  <p class="sub">Enter your admin key to view pending SadaPay claims and mark them verified once you confirm the transfer landed.</p>
+  <div class="key-row">
+    <input type="password" id="adminKey" placeholder="Admin key">
+    <button id="loadBtn">Load</button>
+  </div>
+  <div id="msg"></div>
+  <table id="table" style="display:none;">
+    <thead><tr><th>Client</th><th>Amount</th><th>Note</th><th>Date</th><th>Status</th><th></th></tr></thead>
+    <tbody id="tbody"></tbody>
+  </table>
+</div>
+
+<script>
+  const keyInput = document.getElementById('adminKey');
+  const msg = document.getElementById('msg');
+  const table = document.getElementById('table');
+  const tbody = document.getElementById('tbody');
+
+  async function load(){
+    const key = keyInput.value.trim();
+    if(!key){ msg.textContent = 'Enter your admin key first.'; return; }
+    msg.textContent = 'Loading…';
+    try{
+      const r = await fetch('/api/admin/payments', { headers: { 'x-admin-key': key } });
+      const data = await r.json();
+      if(!r.ok){ msg.textContent = data.error || 'Failed to load.'; table.style.display='none'; return; }
+      msg.textContent = '';
+      render(data.payments, key);
+    }catch(e){ msg.textContent = 'Could not reach the server.'; }
+  }
+
+  function render(payments, key){
+    if(!payments.length){
+      table.style.display='none';
+      msg.innerHTML = '<div class="empty">No payment claims yet.</div>';
+      return;
+    }
+    table.style.display='table';
+    tbody.innerHTML = payments.map(p => `
+      <tr data-id="${p.id}">
+        <td>${p.userName || '—'}<br><span style="opacity:.5">${p.userEmail || ''}</span></td>
+        <td>Rs. ${Number(p.amount).toLocaleString()}</td>
+        <td>${(p.note || '—').replace(/</g,'&lt;')}</td>
+        <td>${new Date(p.createdAt).toLocaleDateString()}</td>
+        <td><span class="status ${p.status}">${p.status}</span></td>
+        <td><button class="verify-btn" ${p.status==='verified' ? 'disabled' : ''} data-id="${p.id}">${p.status==='verified' ? 'Verified' : 'Mark verified'}</button></td>
+      </tr>
+    `).join('');
+
+    tbody.querySelectorAll('.verify-btn:not(:disabled)').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        btn.disabled = true; btn.textContent = 'Saving…';
+        const id = btn.dataset.id;
+        const r = await fetch(`/api/admin/payments/${id}/verify`, { method:'POST', headers:{ 'x-admin-key': key } });
+        if(r.ok){ load(); } else { btn.disabled = false; btn.textContent = 'Retry'; }
+      });
+    });
+  }
+
+  document.getElementById('loadBtn').addEventListener('click', load);
+  keyInput.addEventListener('keydown', e => { if(e.key === 'Enter') load(); });
+</script>
+</body>
+</html>
