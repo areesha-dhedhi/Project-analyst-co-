@@ -22,7 +22,7 @@ const PORT = process.env.PORT || 3000;
 // --- CONFIGURE THESE (via environment variables in production) ---
 const ADMIN_KEY = process.env.ADMIN_KEY || 'Areesha@projectanalystco';
 const SADAPAY_ACCOUNT_TITLE = process.env.SADAPAY_ACCOUNT_TITLE || 'The Project Analyst Co.';
-const SADAPAY_IBAN = process.env.SADAPAY_IBAN || 'PASTE-YOUR-IBAN-HERE';
+const SADAPAY_IBAN = process.env.SADAPAY_IBAN || 'PK65 SADA 0000 0032 5255 5226';
 // -------------------------------------------------------------------
 
 function readJSON(file) {
